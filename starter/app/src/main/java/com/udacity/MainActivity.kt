@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var notificationManager: NotificationManager
     private lateinit var pendingIntent: PendingIntent
     private lateinit var action: NotificationCompat.Action
+    private lateinit var downloadManager: DownloadManager
 
     private lateinit var btnDownload: LoadingButton
     private lateinit var rgDownloadOptions: RadioGroup
@@ -33,6 +34,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         btnDownload = findViewById(R.id.custom_button)
         rgDownloadOptions = findViewById(R.id.rgDownloadOptions)
+        downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         setSupportActionBar(findViewById(R.id.toolbar))
         registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
 
@@ -44,6 +46,10 @@ class MainActivity : AppCompatActivity() {
                 R.id.glide_option -> {
                     fileName = "glide_repo"
                     url = URL_GLIDE
+                }
+                R.id.glide_option_error -> {
+                    fileName = "glide_repo"
+                    url = URL_GLIDE_FAILED
                 }
                 R.id.udacity_option -> {
                     fileName = "udacity_repo"
@@ -64,9 +70,14 @@ class MainActivity : AppCompatActivity() {
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            Log.e("MainActivity", "onReceive EXTRA_DOWNLOAD: DONE")
             val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            Log.d("MainActivity", "onReceive EXTRA_DOWNLOAD: Finished with Success: ${getDownloadStatus(downloadID)}")
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(receiver)
     }
 
     private fun download(url: String, fileName: String) {
@@ -82,17 +93,32 @@ class MainActivity : AppCompatActivity() {
                     Environment.DIRECTORY_DOWNLOADS,
                     "$fileName.zip"
                 )
-        val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         downloadID = downloadManager.enqueue(request)// enqueue puts the download request in the queue.
     }
 
+    private fun getDownloadStatus(downloadId: Long): Boolean {
+        val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))
+        return if (cursor?.moveToFirst() == true) {
+            val columnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+            when (cursor.getInt(columnIndex)) {
+                DownloadManager.STATUS_SUCCESSFUL -> {
+                    true
+                }
+                else -> {
+                    false
+                }
+            }
+        } else {
+            false
+        }
+    }
+
     companion object {
-        private const val URL_GLIDE =
-            "https://github.com/bumptech/glide/archive/master.zip"
+        private const val URL_GLIDE = "https://github.com/bumptech/glide/archive/master.zip"
+        private const val URL_GLIDE_FAILED = "https://github.com/bumptech/glide/archive/master_error.zip"
         private const val URL_UDACITY =
             "https://github.com/udacity/nd940-c3-advanced-android-programming-project-starter/archive/master.zip"
-        private const val URL_RETROFIT =
-            "https://github.com/square/retrofit/archive/master.zip"
+        private const val URL_RETROFIT = "https://github.com/square/retrofit/archive/master.zip"
         private const val CHANNEL_ID = "channelId"
     }
 
