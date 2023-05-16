@@ -15,6 +15,8 @@ import kotlin.properties.Delegates
 class LoadingButton @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
+
+    private val animationDuration = 1000L
     private var widthSize = 0
     private var heightSize = 0
 
@@ -52,7 +54,7 @@ class LoadingButton @JvmOverloads constructor(
         initData(attrs)
     }
 
-    fun setState(state: ButtonState) {
+    private fun setState(state: ButtonState) {
         if (state is ButtonState.Completed) {
             progress = 0f
         }
@@ -64,6 +66,12 @@ class LoadingButton @JvmOverloads constructor(
         circleSize = h * 0.4f
         calculateTextPoint()
         calculateCircleFrame()
+    }
+
+    override fun performClick(): Boolean {
+        setState(ButtonState.Clicked)
+        setProgress(1f)
+        return super.performClick()
     }
 
     private fun initData(attrs: AttributeSet? = null) {
@@ -111,7 +119,8 @@ class LoadingButton @JvmOverloads constructor(
         textPaint.textSize = titleSize
     }
 
-    fun setProgress(progressValue: Float) {
+    private fun setProgress(progressValue: Float) {
+        setState(ButtonState.Loading)
         val currentProgress = this.progress
         if (valueAnimator.isRunning) {
             valueAnimator.cancel()
@@ -123,7 +132,7 @@ class LoadingButton @JvmOverloads constructor(
                     currentProgress, progressValue
                 )
             )
-            duration = 300
+            duration = animationDuration
             interpolator = AccelerateDecelerateInterpolator()
 
             addUpdateListener {

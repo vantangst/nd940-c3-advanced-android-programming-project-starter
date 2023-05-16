@@ -54,8 +54,6 @@ class MainActivity : AppCompatActivity() {
                     url = URL_RETROFIT
                 }
             }
-            btnDownload.setState(ButtonState.Loading)
-            btnDownload.setProgress(1f)
             if (url.isEmpty()) {
                 Toast.makeText(this, getString(R.string.msg_select_file_to_download), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
