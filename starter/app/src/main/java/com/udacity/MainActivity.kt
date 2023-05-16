@@ -10,6 +10,8 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.*
 import android.util.Log
+import android.widget.RadioGroup
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 
@@ -22,19 +24,43 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pendingIntent: PendingIntent
     private lateinit var action: NotificationCompat.Action
 
-    private lateinit var downloadManager: DownloadManager
     private lateinit var btnDownload: LoadingButton
+    private lateinit var rgDownloadOptions: RadioGroup
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         btnDownload = findViewById(R.id.custom_button)
+        rgDownloadOptions = findViewById(R.id.rgDownloadOptions)
         setSupportActionBar(findViewById(R.id.toolbar))
         registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
 
         btnDownload.setOnClickListener {
-            download(URL_GLIDE, "glide")
+            val selectedId = rgDownloadOptions.checkedRadioButtonId
+            var fileName = ""
+            var url = ""
+            when (selectedId) {
+                R.id.glide_option -> {
+                    fileName = "glide_repo"
+                    url = URL_GLIDE
+                }
+                R.id.udacity_option -> {
+                    fileName = "udacity_repo"
+                    url = URL_UDACITY
+                }
+                R.id.retrofit_option -> {
+                    fileName = "retrofit_repo"
+                    url = URL_RETROFIT
+                }
+            }
+            btnDownload.setState(ButtonState.Loading)
+            btnDownload.setProgress(1f)
+            if (url.isEmpty()) {
+                Toast.makeText(this, getString(R.string.msg_select_file_to_download), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            download(url, fileName)
         }
     }
 
@@ -46,8 +72,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun download(url: String, fileName: String) {
-        btnDownload.setState(ButtonState.Loading)
-        btnDownload.setProgress(1f)
         val request =
             DownloadManager.Request(Uri.parse(url))
                 .setTitle(getString(R.string.app_name))
