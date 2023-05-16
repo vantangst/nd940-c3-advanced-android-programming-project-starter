@@ -17,6 +17,13 @@
         android:layout_height="60dp"
         android:layout_margin="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:ld_title_size="18sp"
+        app:ld_title_loading="@string/button_loading"
+        app:ld_title_normal="@string/button_normal"
+        app:ld_title_color="@color/white"
+        app:ld_background_normal="@color/colorPrimary"
+        app:ld_background_loading="@color/colorPrimaryDark"
+        app:ld_highlight_color="@color/colorAccent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
