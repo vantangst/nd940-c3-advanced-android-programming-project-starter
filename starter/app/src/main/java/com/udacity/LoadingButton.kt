@@ -103,7 +103,7 @@ class LoadingButton @JvmOverloads constructor(
             }
         }
 
-        circleFrame = RectF(0f, 0f, 100f, 100f)
+        circleFrame = RectF(0f, 0f, circleSize, circleSize)
         circlePaint.isAntiAlias = true
         circlePaint.color = colorCircle
         circlePaint.style = Paint.Style.FILL
