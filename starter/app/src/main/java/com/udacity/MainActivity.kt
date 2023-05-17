@@ -2,7 +2,6 @@ package com.udacity
 
 import android.app.DownloadManager
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -12,8 +11,8 @@ import android.os.*
 import android.util.Log
 import android.widget.RadioGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
 
 
 class MainActivity : AppCompatActivity() {
@@ -21,23 +20,24 @@ class MainActivity : AppCompatActivity() {
     private var downloadID: Long = 0
 
     private lateinit var notificationManager: NotificationManager
-    private lateinit var pendingIntent: PendingIntent
-    private lateinit var action: NotificationCompat.Action
     private lateinit var downloadManager: DownloadManager
 
     private lateinit var btnDownload: LoadingButton
     private lateinit var rgDownloadOptions: RadioGroup
+    private var currentOptionName = ""
 
+    private val pushNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        Log.d(TAG, "Request Notification Permission: Granted: $granted")
+    }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        btnDownload = findViewById(R.id.custom_button)
-        rgDownloadOptions = findViewById(R.id.rgDownloadOptions)
+    private fun initData() {
         downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-        setSupportActionBar(findViewById(R.id.toolbar))
-        registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+        notificationManager = getSystemService(NotificationManager::class.java) as NotificationManager
+    }
 
+    private fun setupAction() {
         btnDownload.setOnClickListener {
             val selectedId = rgDownloadOptions.checkedRadioButtonId
             var fileName = ""
@@ -45,18 +45,22 @@ class MainActivity : AppCompatActivity() {
             when (selectedId) {
                 R.id.glide_option -> {
                     fileName = "glide_repo"
+                    currentOptionName = getString(R.string.glide_option)
                     url = URL_GLIDE
                 }
                 R.id.glide_option_error -> {
                     fileName = "glide_repo"
+                    currentOptionName = getString(R.string.glide_option_error)
                     url = URL_GLIDE_FAILED
                 }
                 R.id.udacity_option -> {
                     fileName = "udacity_repo"
+                    currentOptionName = getString(R.string.udacity_option)
                     url = URL_UDACITY
                 }
                 R.id.retrofit_option -> {
                     fileName = "retrofit_repo"
+                    currentOptionName = getString(R.string.retrofit_option)
                     url = URL_RETROFIT
                 }
             }
@@ -68,10 +72,47 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        btnDownload = findViewById(R.id.custom_button)
+        rgDownloadOptions = findViewById(R.id.rgDownloadOptions)
+        setSupportActionBar(findViewById(R.id.toolbar))
+
+        initData()
+
+        registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+
+        askNotificationPermissionIfNeeded()
+
+        setupAction()
+    }
+
+    private fun askNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pushNotificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    private fun sendNotification(notification: NotificationBody) {
+        notificationManager.sendNotification(
+            notification,
+            getString(R.string.notification_description),
+            applicationContext
+        )
+    }
+
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            Log.d("MainActivity", "onReceive EXTRA_DOWNLOAD: Finished with Success: ${getDownloadStatus(downloadID)}")
+            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, downloadID)
+            id?.let {
+                Log.d(TAG, "onReceive EXTRA_DOWNLOAD: Finished with Success: ${getDownloadStatus(id)}")
+                val notification = NotificationBody(
+                    currentOptionName,
+                    getDownloadStatus(id)
+                )
+                sendNotification(notification)
+            }
         }
     }
 
@@ -114,12 +155,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val TAG = "MainActivity"
         private const val URL_GLIDE = "https://github.com/bumptech/glide/archive/master.zip"
         private const val URL_GLIDE_FAILED = "https://github.com/bumptech/glide/archive/master_error.zip"
         private const val URL_UDACITY =
             "https://github.com/udacity/nd940-c3-advanced-android-programming-project-starter/archive/master.zip"
         private const val URL_RETROFIT = "https://github.com/square/retrofit/archive/master.zip"
-        private const val CHANNEL_ID = "channelId"
     }
 
 }
