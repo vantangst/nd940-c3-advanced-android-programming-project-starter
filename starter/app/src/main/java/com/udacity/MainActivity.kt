@@ -66,6 +66,9 @@ class MainActivity : AppCompatActivity() {
             }
             if (url.isEmpty()) {
                 Toast.makeText(this, getString(R.string.msg_select_file_to_download), Toast.LENGTH_SHORT).show()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    btnDownload.setState(ButtonState.Completed)
+                }, 1000L)
                 return@setOnClickListener
             }
             download(url, fileName)
@@ -107,6 +110,7 @@ class MainActivity : AppCompatActivity() {
             val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, downloadID)
             id?.let {
                 Log.d(TAG, "onReceive EXTRA_DOWNLOAD: Finished with Success: ${getDownloadStatus(id)}")
+                btnDownload.setState(ButtonState.Completed)
                 val notification = NotificationBody(
                     currentOptionName,
                     getDownloadStatus(id)

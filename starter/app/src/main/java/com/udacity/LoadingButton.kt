@@ -22,6 +22,10 @@ class LoadingButton @JvmOverloads constructor(
 
     private val valueAnimator = ValueAnimator()
     private var buttonState: ButtonState by Delegates.observable(ButtonState.Completed) { p, old, new ->
+        if (new is ButtonState.Completed) {
+            progress = 0f
+            valueAnimator.cancel()
+        }
         calculateTextPoint()
         calculateCircleFrame()
         invalidate()
@@ -54,10 +58,7 @@ class LoadingButton @JvmOverloads constructor(
         initData(attrs)
     }
 
-    private fun setState(state: ButtonState) {
-        if (state is ButtonState.Completed) {
-            progress = 0f
-        }
+    fun setState(state: ButtonState) {
         buttonState = state
     }
 
@@ -69,9 +70,12 @@ class LoadingButton @JvmOverloads constructor(
     }
 
     override fun performClick(): Boolean {
-        setState(ButtonState.Clicked)
-        setProgress(1f)
-        return super.performClick()
+        if (buttonState !is ButtonState.Loading) {
+            setState(ButtonState.Clicked)
+            setProgress(1f)
+            return super.performClick()
+        }
+        return false
     }
 
     private fun initData(attrs: AttributeSet? = null) {
@@ -133,14 +137,13 @@ class LoadingButton @JvmOverloads constructor(
                 )
             )
             duration = animationDuration
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
             interpolator = AccelerateDecelerateInterpolator()
 
             addUpdateListener {
                 val newValue = it.getAnimatedValue("percent") as Float
                 progress = newValue
-                if (progress >= 1f) {
-                    this@LoadingButton.setState(ButtonState.Completed)
-                }
                 invalidate()
             }
         }
